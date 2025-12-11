@@ -1,0 +1,39 @@
+services:
+  mongo1:
+    image: mongo:latest
+    container_name: mongo1
+    restart: always
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    networks:
+      - mongonet
+    volumes:
+      - mongo1-data:/data/db
+
+  mongo2:
+    image: mongo:latest
+    container_name: mongo2
+    restart: always
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    networks:
+      - mongonet
+    volumes:
+      - mongo2-data:/data/db
+
+  mongo3:
+    image: mongo:latest
+    container_name: mongo3
+    restart: always
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    networks:
+      - mongonet
+    volumes:
+      - mongo3-data:/data/db
+
+volumes:
+  mongo1-data:
+  mongo2-data:
+  mongo3-data:
+
+networks:
+  mongonet:
+    driver: bridge
