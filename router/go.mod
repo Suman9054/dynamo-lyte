@@ -1,6 +1,6 @@
 module github.com/sumanhara9054/v1/dynamo-lite
 
-go 1.25.0
+go 1.25.5
 
 require (
 	github.com/gabriel-vasile/mimetype v1.4.10 // indirect

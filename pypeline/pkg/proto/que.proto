@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package pypeline;
+
+option go_package = "github.com/suman9054/zeone/pkg/proto;proto";
+
+
+message QueryRequest {
+    string query = 1;
+    map<string, string> parameters = 2;
+}
+
+message QueryResponse {
+    Status status = 1;
+}
+
+enum Status {
+    STATUS_UNSPECIFIED = 0;
+    SUCCESS = 1;
+    FAILURE = 2;
+}
+
+service QueryService {
+    rpc ExecuteQuery (QueryRequest) returns (QueryResponse);
+}

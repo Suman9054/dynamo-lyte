@@ -1,0 +1,8 @@
+package controlar
+
+
+
+
+func RouterControlar(){
+	 
+}

@@ -9,9 +9,13 @@ import (
 	"time"
 
 	"github.com/sumanhara9054/v1/dynamo-lite/pkg/api"
+	
+	
 )
 
 func main() {
+
+	
 	router := http.NewServeMux()
 
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -24,7 +28,7 @@ func main() {
 		Addr:    "127.0.0.1:8080",
 		Handler: router,
 	}
-	done := make(chan os.Signal)
+	done := make(chan os.Signal,1)
 	slog.Info("Starting server on localhost:8080")
 	go func() {
 		if err := server.ListenAndServe(); err != nil {
