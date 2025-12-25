@@ -287,10 +287,11 @@ const file_pkg_proto_que_proto_rawDesc = "" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aSUCCESS\x10\x01\x12\v\n" +
 	"\aFAILURE\x10\x02\x12\r\n" +
-	"\tNOT_FOUND\x10\x032\x92\x01\n" +
+	"\tNOT_FOUND\x10\x032\xdc\x01\n" +
 	"\fQueryService\x12?\n" +
 	"\fExecuteQuery\x12\x16.pypeline.QueryRequest\x1a\x17.pypeline.QueryResponse\x12A\n" +
-	"\bGetQuery\x12\x19.pypeline.GetQueryRequest\x1a\x1a.pypeline.GetQueryResponseB,Z*github.com/suman9054/zeone/pkg/proto;protob\x06proto3"
+	"\bGetQuery\x12\x19.pypeline.GetQueryRequest\x1a\x1a.pypeline.GetQueryResponse\x12H\n" +
+	"\x10SubscribeToQuery\x12\x19.pypeline.GetQueryRequest\x1a\x17.pypeline.QueryResponse0\x01B,Z*github.com/suman9054/zeone/pkg/proto;protob\x06proto3"
 
 var (
 	file_pkg_proto_que_proto_rawDescOnce sync.Once
@@ -321,10 +322,12 @@ var file_pkg_proto_que_proto_depIdxs = []int32{
 	5, // 3: pypeline.GetQueryResponse.queryresult:type_name -> google.protobuf.Struct
 	1, // 4: pypeline.QueryService.ExecuteQuery:input_type -> pypeline.QueryRequest
 	3, // 5: pypeline.QueryService.GetQuery:input_type -> pypeline.GetQueryRequest
-	2, // 6: pypeline.QueryService.ExecuteQuery:output_type -> pypeline.QueryResponse
-	4, // 7: pypeline.QueryService.GetQuery:output_type -> pypeline.GetQueryResponse
-	6, // [6:8] is the sub-list for method output_type
-	4, // [4:6] is the sub-list for method input_type
+	3, // 6: pypeline.QueryService.SubscribeToQuery:input_type -> pypeline.GetQueryRequest
+	2, // 7: pypeline.QueryService.ExecuteQuery:output_type -> pypeline.QueryResponse
+	4, // 8: pypeline.QueryService.GetQuery:output_type -> pypeline.GetQueryResponse
+	2, // 9: pypeline.QueryService.SubscribeToQuery:output_type -> pypeline.QueryResponse
+	7, // [7:10] is the sub-list for method output_type
+	4, // [4:7] is the sub-list for method input_type
 	4, // [4:4] is the sub-list for extension type_name
 	4, // [4:4] is the sub-list for extension extendee
 	0, // [0:4] is the sub-list for field type_name
