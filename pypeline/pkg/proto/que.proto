@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package pypeline;
+
+option go_package = "github.com/suman9054/zeone/pkg/proto;proto";
+
+import "google/protobuf/struct.proto";
+
+message QueryRequest {
+    string query = 1;
+    google.protobuf.Struct parameters = 2;
+}
+
+message QueryResponse {
+    Status status = 1;
+}
+
+enum Status {
+    STATUS_UNSPECIFIED = 0;
+    SUCCESS = 1;
+    FAILURE = 2;
+    NOT_FOUND = 3;
+}
+
+message GetQueryRequest {
+    string querykey = 1;
+}
+
+message GetQueryResponse {
+    Status status = 1;
+    google.protobuf.Struct queryresult = 2;
+}
+
+service QueryService {
+    rpc ExecuteQuery (QueryRequest) returns (QueryResponse);
+    rpc GetQuery(GetQueryRequest) returns (GetQueryResponse);
+}

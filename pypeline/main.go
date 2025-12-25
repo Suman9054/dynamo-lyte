@@ -2,41 +2,42 @@ package main
 
 import (
 	"context"
+	
 	"log"
 	"net"
-	"sync"
-	"time"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	pb "github.com/suman9054/zeone/pkg/proto"
+	"github.com/suman9054/zeone/pkg/store"
 )
 
 type server struct {
 	pb.UnimplementedQueryServiceServer
 }
 
-var( 
-	Questore map[string]map[string]string
-	mu       sync.Mutex
-)
+var Questore = store.Newstore()
 
 func (s *server) ExecuteQuery(
 	ctx context.Context,
 	req *pb.QueryRequest,
 ) (*pb.QueryResponse, error) {
-  
- if req.Query == "" || req.Parameters == nil {
+
+	if req.Query == "" || req.Parameters == nil {
 		return &pb.QueryResponse{
 			Status: pb.Status_STATUS_UNSPECIFIED,
 		}, nil
 	}
+	// put your query execution logic here
+	result,err:= structpb.NewStruct(req.Parameters.AsMap())
 
-	mu.Lock()
-	Questore[req.Query] = req.Parameters
-	mu.Unlock()
+	if err!=nil{
+		return &pb.QueryResponse{
+			Status: pb.Status_FAILURE,
+		}, nil
+	}
+	Questore.Putdata(req.Query,result)
 
 	return &pb.QueryResponse{
 		Status: pb.Status_SUCCESS,
@@ -45,82 +46,40 @@ func (s *server) ExecuteQuery(
 
 func (s *server) GetQuery(
 	ctx context.Context,
-	req *pb.Parameters,
-) (*pb.Queryresponse, error){
-	
-	if req.Query == "" {
-		return &pb.Queryresponse{
+	req *pb.GetQueryRequest,
+) (*pb.GetQueryResponse, error) {
+	if req.Querykey == "" {
+		return &pb.GetQueryResponse{
 			Status: pb.Status_STATUS_UNSPECIFIED,
 		}, nil
 	}
 	
-	mu.Lock()
-	response,ok := Questore[req.Query]
-	mu.Unlock()
+	value, ok := Questore.Getdata(req.Querykey)
 	if !ok {
-		return &pb.Queryresponse{
-			Status: pb.Status_STATUS_UNSPECIFIED,
+		return &pb.GetQueryResponse{
+			Status: pb.Status_NOT_FOUND,
 		}, nil
 	}
-
-	return &pb.Queryresponse{
-		Response: response,
-		Status:   pb.Status_SUCCESS,
+	
+	return &pb.GetQueryResponse{
+		Status:      pb.Status_SUCCESS,
+		Queryresult: value,
 	}, nil
-
-}
-
-func (s *server) ConsumeQuery(
-	req *pb.Parameters,
-	stream grpc.ServerStreamingServer[pb.Queryresponse],
-) error {
-
-	if req.Query == "" {
-		return status.Error(codes.InvalidArgument, "query is empty")
-	}
-
-	for {
-		// stop if client disconnects
-		if stream.Context().Err() != nil {
-			return stream.Context().Err()
-		}
-
-		mu.Lock()
-		response, ok := Questore[req.Query]
-		mu.Unlock()
-
-		if ok {
-			err := stream.Send(&pb.Queryresponse{
-				Response: response,
-				Status:   pb.Status_SUCCESS,
-			})
-			if err != nil {
-				return err
-			}
-		}
-
-		// prevent busy loop
-		time.Sleep(500 * time.Millisecond)
-	}
 }
 
 func main() {
-	Questore = make(map[string]map[string]string)
-	
+
 	lis, err := net.Listen("tcp", "127.0.0.1:50051")
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	
 	grpcServer := grpc.NewServer()
 
-	
 	pb.RegisterQueryServiceServer(grpcServer, &server{})
 
 	log.Println("🚀 gRPC server running on 127.0.0.1:50051")
 
-	
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
