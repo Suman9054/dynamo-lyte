@@ -1,7 +1,6 @@
 package store
 
 import (
-	
 	"sync"
 	"sync/atomic"
 	"time"
@@ -14,6 +13,7 @@ type Regmap[k comparable, v any] struct {
 	M       sync.Map
 	count   atomic.Int64
 }
+
 func (r *Regmap[k, v]) Get(key k) (v, bool) {
 	value, ok := r.M.Load(key)
 	if !ok {
@@ -39,7 +39,7 @@ func (r *Regmap[k, v]) All(f func(key k, value v) bool) {
 	})
 }
 
-func newstoremap() Stabel[string,*structpb.Struct] {
+func newstoremap() Stabel[string, *structpb.Struct] {
 	return &Regmap[string, *structpb.Struct]{
 		M: sync.Map{},
 	}
@@ -49,21 +49,23 @@ func newexpiresmap() Stabel[*structpb.Struct, int64] {
 		M: sync.Map{},
 	}
 }
-type Store struct{
-	store Stabel[string,*structpb.Struct]
-	expires Stabel[*structpb.Struct, int64]
-	numskey int
+
+type Store struct {
+	store         Stabel[string, *structpb.Struct]
+	expires       Stabel[*structpb.Struct, int64]
+	numskey       int
+	querysubscibe map[string][]chan *structpb.Struct
 }
 
-func Newstore() *Store{
+func Newstore() *Store {
 	return &Store{
-		store:newstoremap(),
-		expires:newexpiresmap(),
+		store:         newstoremap(),
+		expires:       newexpiresmap(),
+		querysubscibe: make(map[string][]chan *structpb.Struct),
 	}
 }
 
-
-func (s *Store) Putdata(key string, data *structpb.Struct){
+func (s *Store) Putdata(key string, data *structpb.Struct) {
 	curobj, ok := s.store.Get(key)
 	if ok {
 		expiretime, ok := s.expires.Get(curobj)
@@ -72,16 +74,18 @@ func (s *Store) Putdata(key string, data *structpb.Struct){
 			s.expires.Delete(curobj)
 		}
 	}
-	
+
 	s.store.Set(key, data)
 	s.expires.Set(data, time.Now().Add(1*time.Minute).UnixNano())
 	s.numskey++
+	s.Notify(key, data)
+
 }
 
-func (s *Store) Getdata(key string) (*structpb.Struct, bool){
-	
+func (s *Store) Getdata(key string) (*structpb.Struct, bool) {
+
 	data, ok := s.store.Get(key)
-	
+
 	if !ok {
 		return nil, false
 	}
@@ -97,10 +101,10 @@ func (s *Store) Getdata(key string) (*structpb.Struct, bool){
 	return data, true
 }
 
-func (s *Store) Expirewatcher(){
-	ticker := time.NewTicker(1*time.Minute)
+func (s *Store) Expirewatcher() {
+	ticker := time.NewTicker(1 * time.Minute)
 	for {
-		<- ticker.C
+		<-ticker.C
 		now := time.Now().UnixNano()
 		s.expires.All(func(key *structpb.Struct, value int64) bool {
 			if now > value {
@@ -119,3 +123,24 @@ func (s *Store) Expirewatcher(){
 		})
 	}
 }
+
+func (s *Store) Subscribequery(key string) (<-chan *structpb.Struct, func()) {
+	ch := make(chan *structpb.Struct, 1)
+
+	s.querysubscibe[key] = append(s.querysubscibe[key], ch)
+	idx := len(s.querysubscibe[key]) - 1
+
+	cleanup := func() {
+		subs := s.querysubscibe[key]
+		s.querysubscibe[key] = append(subs[:idx], subs[idx+1:]...)
+		close(ch)
+	}
+	return ch, cleanup
+}
+
+func (s *Store) Notify(key string, val *structpb.Struct) {
+	for _, ch := range s.querysubscibe[key] {
+		ch <- val
+	}
+}
+

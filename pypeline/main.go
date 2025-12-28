@@ -2,7 +2,8 @@ package main
 
 import (
 	"context"
-	
+	"fmt"
+
 	"log"
 	"net"
 
@@ -19,7 +20,7 @@ type server struct {
 
 var Questore = store.Newstore()
 
-func (s *server) ExecuteQuery(
+func (s *server) PutQuery(
 	ctx context.Context,
 	req *pb.QueryRequest,
 ) (*pb.QueryResponse, error) {
@@ -30,14 +31,14 @@ func (s *server) ExecuteQuery(
 		}, nil
 	}
 	// put your query execution logic here
-	result,err:= structpb.NewStruct(req.Parameters.AsMap())
+	result, err := structpb.NewStruct(req.Parameters.AsMap())
 
-	if err!=nil{
+	if err != nil {
 		return &pb.QueryResponse{
 			Status: pb.Status_FAILURE,
 		}, nil
 	}
-	Questore.Putdata(req.Query,result)
+	Questore.Putdata(req.Query, result)
 
 	return &pb.QueryResponse{
 		Status: pb.Status_SUCCESS,
@@ -53,20 +54,53 @@ func (s *server) GetQuery(
 			Status: pb.Status_STATUS_UNSPECIFIED,
 		}, nil
 	}
-	
+
 	value, ok := Questore.Getdata(req.Querykey)
 	if !ok {
 		return &pb.GetQueryResponse{
 			Status: pb.Status_NOT_FOUND,
 		}, nil
 	}
-	
+
 	return &pb.GetQueryResponse{
 		Status:      pb.Status_SUCCESS,
 		Queryresult: value,
 	}, nil
 }
 
+func (s *server) SubscribeToQuery(
+	req *pb.GetQueryRequest,
+	stream pb.QueryService_SubscribeToQueryServer,
+) error {
+	key := req.Querykey
+	ch, clean := Questore.Subscribequery(key)
+	defer clean()
+
+	for {
+		select {
+		case <-stream.Context().Done():
+			// Client disconnected
+			fmt.Println("Client disconnected")
+			return stream.Context().Err()
+
+		case update, ok := <-ch:
+			if !ok {
+				// Channel closed by server
+				fmt.Println("Query subscription channel closed")
+				return nil
+			}
+
+			result := &pb.GetQueryResponse{
+				Queryresult: update,
+			}
+
+			if err := stream.Send(result); err != nil {
+				fmt.Println("Send error:", err)
+				return err
+			}
+		}
+	}
+}
 
 func main() {
 

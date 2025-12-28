@@ -32,7 +32,7 @@ message GetQueryResponse {
 }
 
 service QueryService {
-    rpc ExecuteQuery (QueryRequest) returns (QueryResponse);
+    rpc PutQuery (QueryRequest) returns (QueryResponse);
     rpc GetQuery(GetQueryRequest) returns (GetQueryResponse);
-    rpc SubscribeToQuery (GetQueryRequest) returns (stream QueryResponse);
+    rpc SubscribeToQuery (GetQueryRequest) returns (stream GetQueryResponse);
 }
